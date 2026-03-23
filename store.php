@@ -1,62 +1,40 @@
 <?php
 
 /**
- * Inclui o arquivo de conexão com o banco de dados.
+ * Melhoria: Incluímos a classe User para manter a arquitetura Orientada a Objetos.
+ * O arquivo connect.php já é chamado dentro de User.php.
  */
-require __DIR__ . "/connect.php";
+require __DIR__ . "/User.php";
 
 /**
- * Captura os dados enviados pelo formulário via método POST.
- *
- * O operador ?? "" garante que, se o índice não existir,
- * seja usado uma string vazia como valor padrão.
- *
- * trim() remove espaços em branco no início e no fim.
+ * Melhoria de Segurança e Validação:
+ * Utilizando filter_input() conforme sugerido nos objetivos da atividade.
+ * Isso limpa os dados (evita XSS) e valida se o formato do e-mail é real.
  */
-$name = trim($_POST["name"] ?? "");
-$email = trim($_POST["email"] ?? "");
-$document = trim($_POST["document"] ?? "");
+$name = filter_input(INPUT_POST, 'name', FILTER_SANITIZE_SPECIAL_CHARS);
+$email = filter_input(INPUT_POST, 'email', FILTER_VALIDATE_EMAIL);
+$document = filter_input(INPUT_POST, 'document', FILTER_SANITIZE_SPECIAL_CHARS);
 
 /**
- * Validação básica:
- * se qualquer campo estiver vazio, a execução é interrompida.
+ * Validação mais robusta:
+ * Verifica se os campos não estão vazios e se o e-mail passou na validação.
  */
-if ($name === "" || $email === "" || $document === "") {
-    die("Preencha todos os campos.");
+if (!$name || !$email || !$document) {
+    // Retorna um link para voltar caso a validação falhe, melhorando a usabilidade.
+    die("Erro: Dados inválidos. Verifique se todos os campos foram preenchidos corretamente e se o e-mail é válido. <br><br><a href='index.php'>Voltar</a>");
 }
 
 /**
- * Obtém a conexão com o banco.
+ * Instancia a classe User e utiliza o método create()
+ * centralizando a regra de negócio.
  */
-$pdo = Connect::getInstance();
+$userObj = new User();
+$sucesso = $userObj->create($name, $email, $document);
 
-/**
- * Prepara a instrução SQL de inserção.
- *
- * prepare() é a forma recomendada quando existem dados dinâmicos,
- * pois ajuda a evitar SQL Injection.
- */
-$stmt = $pdo->prepare("
-    INSERT INTO users (name, email, document)
-    VALUES (:name, :email, :document)
-");
-
-/**
- * Executa a instrução preparada, enviando os valores
- * para os placeholders nomeados.
- */
-$stmt->execute([
-    ":name" => $name,
-    ":email" => $email,
-    ":document" => $document
-]);
-
-/**
- * Redireciona o usuário para a página principal após o cadastro.
- */
-header("Location: index.php");
-
-/**
- * Encerra a execução do script após o redirecionamento.
- */
-exit;
+if ($sucesso) {
+    // Redireciona de volta para a listagem com sucesso
+    header("Location: index.php");
+    exit;
+} else {
+    die("Erro ao cadastrar o aluno no banco de dados. <a href='index.php'>Voltar</a>");
+}
