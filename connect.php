@@ -47,8 +47,7 @@ class Connect
              * - o nome do banco
              * - o charset
              */
-            $dsn = "mysql:host=" . self::HOST . ";dbname=" . self::DBNAME . ";charset=utf8mb4";
-
+            $dsn = "mysql:host=" . self::HOST . ";port=3307;dbname=" . self::DBNAME . ";charset=utf8mb4";
             /**
              * Cria a conexão com o banco usando PDO.
              *
