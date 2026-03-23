@@ -1,51 +1,38 @@
 <?php
 
 /**
- * Inclui o arquivo de conexão com o banco de dados.
+ * Melhoria: Em vez de chamar a conexão e escrever SQL solto,
+ * incluímos a classe User para usar os métodos que já estão prontos.
  */
-require __DIR__ . "/connect.php";
+require __DIR__ . "/User.php";
 
 /**
  * Captura o parâmetro "id" enviado pela URL
- * e valida se ele é um número inteiro válido.
+ * e valida se ele é um número inteiro válido (evitando SQL Injection).
  *
- * Exemplo:
- * delete.php?id=3
+ * Exemplo: delete.php?id=3
  */
 $id = filter_input(INPUT_GET, "id", FILTER_VALIDATE_INT);
 
 /**
- * Se o ID não for válido, interrompe a execução.
+ * Se o ID não for válido ou não for numérico, interrompe a execução com um link amigável.
  */
 if (!$id) {
-    die("ID inválido.");
+    die("ID inválido ou não fornecido. <a href='index.php'>Voltar para a lista</a>");
 }
 
 /**
- * Obtém a conexão com o banco de dados.
+ * Instancia a classe User e chama o método delete()
  */
-$pdo = Connect::getInstance();
+$userObj = new User();
+$sucesso = $userObj->delete($id);
 
-/**
- * Prepara a instrução SQL para excluir o usuário
- * com base no ID informado.
- */
-$stmt = $pdo->prepare("DELETE FROM users WHERE id = :id");
-
-/**
- * Executa a instrução preparada, enviando o valor do ID.
- */
-$stmt->execute([
-    ":id" => $id
-]);
-
-/**
- * Redireciona o usuário de volta para a página principal
- * após a exclusão.
- */
-header("Location: index.php");
-
-/**
- * Encerra a execução do script.
- */
-exit;
+if ($sucesso) {
+    /**
+     * Redireciona o usuário de volta para a página principal após excluir.
+     */
+    header("Location: index.php");
+    exit;
+} else {
+    die("Erro ao tentar excluir o aluno. <a href='index.php'>Voltar para a lista</a>");
+}
