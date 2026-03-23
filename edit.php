@@ -1,55 +1,38 @@
 <?php
 
 /**
- * Inclui o arquivo de conexão com o banco de dados.
+ * Melhoria: Incluímos o arquivo da classe User para utilizar a 
+ * Orientação a Objetos em vez de fazer consultas diretas no banco.
  */
-require __DIR__ . "/connect.php";
+require __DIR__ . "/User.php";
 
 /**
  * Captura o parâmetro "id" enviado pela URL
- * e valida se ele é um número inteiro válido.
+ * e valida se ele é um número inteiro válido (proteção contra SQL Injection).
  *
- * Exemplo de URL:
- * edit.php?id=3
+ * Exemplo de URL: edit.php?id=3
  */
 $id = filter_input(INPUT_GET, "id", FILTER_VALIDATE_INT);
 
 /**
- * Se o ID não for válido, o script é interrompido.
+ * Se o ID não for válido, o script é interrompido com uma mensagem amigável.
  */
 if (!$id) {
-    die("ID inválido.");
+    die("ID inválido. <a href='index.php'>Voltar para a lista</a>");
 }
 
 /**
- * Obtém a conexão com o banco de dados.
+ * Instancia a classe User e utiliza o método findById()
+ * para buscar os dados do aluno específico.
  */
-$pdo = Connect::getInstance();
-
-/**
- * Prepara a consulta SQL para buscar apenas um usuário
- * com o ID informado.
- *
- * LIMIT 1 reforça que apenas um registro será retornado.
- */
-$stmt = $pdo->prepare("SELECT * FROM users WHERE id = :id LIMIT 1");
-
-/**
- * Executa a consulta, passando o valor do ID.
- */
-$stmt->execute([":id" => $id]);
-
-/**
- * Busca o primeiro registro encontrado.
- * Como o ID é único, esperamos apenas um usuário.
- */
-$user = $stmt->fetch();
+$userObj = new User();
+$user = $userObj->findById($id);
 
 /**
  * Se nenhum aluno for encontrado, interrompe a execução.
  */
 if (!$user) {
-    die("Aluno não encontrado.");
+    die("Aluno não encontrado. <a href='index.php'>Voltar para a lista</a>");
 }
 ?>
 
@@ -58,45 +41,50 @@ if (!$user) {
 
 <head>
     <meta charset="UTF-8">
-    <title>Editar aluno</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Aluno - CRUD PHP</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 
-<body>
+<body class="bg-light">
 
-    <h1>Editar aluno</h1>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">Editar Cadastro do Aluno</h5>
+                    </div>
+                    <div class="card-body">
+                        <form action="update.php" method="post">
+                            
+                            <input type="hidden" name="id" value="<?= $user["id"] ?>">
 
-    <!--
-        Formulário responsável por enviar os dados atualizados
-        para o arquivo update.php.
-    -->
-    <form action="update.php" method="post">
-        <!--
-            Campo oculto que envia o ID do aluno.
-            Ele é necessário para que o update.php saiba
-            qual registro deve ser atualizado.
-        -->
-        <input type="hidden" name="id" value="<?= $user["id"] ?>">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Nome Completo:</label>
+                                <input type="text" name="name" class="form-control" value="<?= htmlspecialchars($user["name"]) ?>" required>
+                            </div>
 
-        <p>
-            <label>Nome:</label><br>
-            <input type="text" name="name" value="<?= htmlspecialchars($user["name"]) ?>" required>
-        </p>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">E-mail:</label>
+                                <input type="email" name="email" class="form-control" value="<?= htmlspecialchars($user["email"]) ?>" required>
+                            </div>
 
-        <p>
-            <label>E-mail:</label><br>
-            <input type="email" name="email" value="<?= htmlspecialchars($user["email"]) ?>" required>
-        </p>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Curso:</label>
+                                <input type="text" name="document" class="form-control" value="<?= htmlspecialchars($user["document"]) ?>" required>
+                            </div>
 
-        <p>
-            <label>Curso:</label><br>
-            <input type="text" name="document" value="<?= htmlspecialchars($user["document"]) ?>" required>
-        </p>
-
-        <button type="submit">Atualizar</button>
-    </form>
-
-    <p><a href="index.php">Voltar</a></p>
+                            <div class="d-flex justify-content-between mt-4">
+                                <a href="index.php" class="btn btn-outline-secondary">Voltar</a>
+                                <button type="submit" class="btn btn-warning">Atualizar Dados</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
 </body>
-
 </html>

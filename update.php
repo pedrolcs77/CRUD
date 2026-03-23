@@ -1,9 +1,9 @@
 <?php
 
 /**
- * Inclui o arquivo de conexão com o banco de dados.
+ * Melhoria: Incluímos a classe User para centralizar as operações do banco.
  */
-require __DIR__ . "/connect.php";
+require __DIR__ . "/User.php";
 
 /**
  * Captura e valida o ID enviado pelo formulário via POST.
@@ -12,58 +12,36 @@ require __DIR__ . "/connect.php";
 $id = filter_input(INPUT_POST, "id", FILTER_VALIDATE_INT);
 
 /**
- * Captura os demais dados enviados pelo formulário.
- *
- * trim() remove espaços em branco no início e no fim.
- * O operador ?? "" garante valor padrão caso o índice não exista.
+ * Melhoria de Segurança:
+ * Substituímos o trim() básico por filter_input() para sanitizar
+ * os dados e validar o formato do e-mail de forma segura.
  */
-$name = trim($_POST["name"] ?? "");
-$email = trim($_POST["email"] ?? "");
-$document = trim($_POST["document"] ?? "");
+$name = filter_input(INPUT_POST, 'name', FILTER_SANITIZE_SPECIAL_CHARS);
+$email = filter_input(INPUT_POST, 'email', FILTER_VALIDATE_EMAIL);
+$document = filter_input(INPUT_POST, 'document', FILTER_SANITIZE_SPECIAL_CHARS);
 
 /**
- * Validação básica:
- * - o ID precisa ser válido
- * - nome, e-mail e curso não podem estar vazios
+ * Validação reforçada:
+ * Verifica se o ID é válido e se nenhum campo obrigatório ficou de fora.
  */
-if (!$id || $name === "" || $email === "" || $document === "") {
-    die("Dados inválidos.");
+if (!$id || !$name || !$email || !$document) {
+    // Redireciona de volta para a tela de edição em caso de erro nos dados
+    die("Dados inválidos. Verifique se os campos estão preenchidos corretamente. <a href='edit.php?id=$id'>Voltar para edição</a>");
 }
 
 /**
- * Obtém a conexão com o banco de dados.
+ * Instancia a classe User e executa o método update(),
+ * passando os dados limpos e validados.
  */
-$pdo = Connect::getInstance();
+$userObj = new User();
+$sucesso = $userObj->update($id, $name, $email, $document);
 
-/**
- * Prepara a instrução SQL de atualização.
- *
- * O registro será atualizado com base no ID recebido.
- */
-$stmt = $pdo->prepare("
-    UPDATE users
-    SET name = :name, email = :email, document = :document
-    WHERE id = :id
-");
-
-/**
- * Executa a instrução preparada, enviando os valores
- * para os respectivos placeholders.
- */
-$stmt->execute([
-    ":id" => $id,
-    ":name" => $name,
-    ":email" => $email,
-    ":document" => $document
-]);
-
-/**
- * Redireciona o usuário para a página principal
- * após a atualização.
- */
-header("Location: index.php");
-
-/**
- * Encerra a execução do script.
- */
-exit;
+if ($sucesso) {
+    /**
+     * Redireciona o usuário para a página principal após atualizar.
+     */
+    header("Location: index.php");
+    exit;
+} else {
+    die("Erro ao tentar atualizar o aluno no banco de dados. <a href='edit.php?id=$id'>Voltar para edição</a>");
+}
