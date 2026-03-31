@@ -1,2 +1,6 @@
 .htaccess
 UserAdvanced.php
+
+/vendor/
+.env
+composer.phar
